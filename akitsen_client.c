@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     
     // checks if there is a server host, prints error if no server.
     if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
+        fprintf(stderr,"No Host Server\n");
         exit(0);
     }
     
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
     // checks if the connection is working. Must = 1 to work.
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
-        error("ERROR connecting");
+        error("There was a Socket Connection Issue");
 
     // reads to see if socket is opened.
     n = read(sockfd, buffer, 255);
