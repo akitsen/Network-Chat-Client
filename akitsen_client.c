@@ -1,8 +1,8 @@
-// Andrey Kitsen
+// Author: Andrey Kitsen
 // Networks - Project 1 Chat Client
-// Resources Used:
-// Worked with Connor Riva, Peter Mata, Alex Standke
+// Worked with/Recieved Help From: Connor Riva, Peter Mata, Alex Standke
 
+// Resources Used:
 // http://www.linuxhowtos.org/data/6/client.c
 // Youtube Socket Videos
 // http://www.thiyagaraaj.com/tutorials/unix-network-programming-example-programs/tcp-chat-programming-in-unix-using-c-programmin
@@ -10,7 +10,7 @@
 // http://www.thegeekstuff.com/2011/12/c-socket-programming/
 // http://www.stackoverflow.com
 
-
+// #include <unp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,54 +22,41 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <netdb.h> 
-// #include <unp.h>
 
     // takes two params, argc which is an int.
     // *argv is a char, and is a pointer.
 int main(int argc, char *argv[])
 {
-
-    //struct sockaddr_in    servaddr;
-    //struct sockaddr SA;
-    /*
-    void err_sys(const char* x){
-        perror(x)
-        exit(1);
-    }
-    */
-
+    
     // defined variables
+    // commonly used variable names in C.
     int sockfd;
     int portnumber;
     int n;
 
     // defined structures.
-    struct sockaddr_in serv_addr;
-    struct hostent *server;
-    struct timeval wait_time;
+    struct sockaddr_in serv_addr; // socket address = server address.
+    struct hostent *server; // hostent data struct, named server: pointer to memory location.
+    struct timeval wait_time; // time delay (DONE IN CLASS TOGETHER)
 
     // defines our buffer size.
     char buffer[256];
-    
-
-    if (argc != 2)
-        printf("usage: a.out <IPaddress>");
-
-    // throws error if argc < 3, exits.
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port ", argv[0]);
-       exit(0);
-    }
 
     // atoi is converting string -> integer.
     portnumber = atoi(argv[2]);
 
     // listens if a socket is being opened.
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    // throws error if argc < 3, exits.
+    if (argc < 3) {
+       fprintf(stderr,"usage %s hostname port ", argv[0]);
+       exit(0);
+    }
     
     // throws error if socket is incorrectly being opened.
     if (sockfd < 0) 
-        error("ERROR opening socket");
+        error("There was an error opening the socket!");
     
     // defines server as the hostname(pilot.westmont.edu)
     server = gethostbyname(argv[1]);
@@ -83,18 +70,19 @@ int main(int argc, char *argv[])
     // Zero's out the server address for connection.
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
+    bcopy((char *)server->h_addr, // copys the bytes from the source.
          (char *)&serv_addr.sin_addr.s_addr,
-         server->h_length);
+         server->h_length); // takes up block of memory with h_length
     serv_addr.sin_port = htons(portnumber);
     
 
-    // checks if the connection is working. Must be a 1 to work.
+    // checks if the connection is working. Must = 1 to work.
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
 
-
+    // reads to see if socket is opened.
     n = read(sockfd, buffer, 255);
+    // prints NewLine and calls the buffer size.
     printf("%s\n", buffer);
 
     // choose a username
@@ -106,22 +94,30 @@ int main(int argc, char *argv[])
     // given file stream source into an array of characters
     fgets(buffer,255,stdin);
 
+    // writes the listened socket, with the buffer being the length of the string.
     n = write(sockfd,buffer,strlen(buffer));
+
+    // if socket being written is less than 0, throws error.
     if (n < 0) 
-         error("ERROR writing to socket");
+         error("There was a problem writing to the socket...SORRY!");
     bzero(buffer,256);
 
+
+    // FOLLOW WAS DONE IN CLASS 9/22/14
     // delays time for response. 
     // Explained and walked through in class by Prof. Rodkey.
     wait_time.tv_sec = 0;    
     wait_time.tv_usec = 10000; 
 
     // system call, 32 = maximum file descriptors, wait time.
+    // DESCRIBED IN CLASS.
     select(32, NULL, NULL, NULL, &wait_time);
     n = read(sockfd, buffer, 255);
     printf("%s\n",buffer);
     bzero(buffer,256);
 
+    // IDEA WAS GIVEN IN CLASS BY ALEX AND CONTRIBUTED TO BY OTHERS.
+    // keeps the socket port open when equal to 1.
     while (1) {
 
         // Scans to see if data is ready to be read.
@@ -136,27 +132,30 @@ int main(int argc, char *argv[])
             n = read(sockfd, buffer, 255);
             printf("%s\n",buffer);
         }
-        
-        // Clears the buffer, and waits for new input.
-        printf("> ");
-        bzero(buffer,256);
-        fgets(buffer,255,stdin);
 
-        // if length of buffer is > 1, writes the message.
+        printf(" :--> ");
+
+        // Clears the buffer, and waits for new input.
+        bzero(buffer,256); // clears full buffer 256
+
+        fgets(buffer,255,stdin); // set to 255, with 1 left over.
+
+        // if length of buffer is > 1, begins writing message.
         if (strlen(buffer) > 1) { 
             n = write(sockfd,buffer,strlen(buffer));
             bzero(buffer,256);
 
-            // Time delay
+            // Time delayed again.
+            // called again, because DID NOT WORK IN CLASS!!!
             wait_time.tv_sec = 0;    
             wait_time.tv_usec = 10000;  
             select(32, NULL, NULL, NULL, &wait_time);
         }
     }
 
-    // closes the open socket.
+    // closes the socket we have been using.
     close(sockfd);
 
-    // exits out with 0.
+    // exits out by returning 0.
     return 0;
 }
